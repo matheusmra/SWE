@@ -4,7 +4,7 @@ This repository contains university assignments and projects for the Software En
 
 ## 📁 Repository Structure
 
--   [**Assignment A01**](./assigments/a01): First assignment (HTML/CSS/JS basics).
+-   [**Assignment A01**](./assigments/a01): First assignment WEB GIS Prototype (HTML/CSS/JS basics).
 -   [**Assignment A02**](./assigments/a02): Order Management System (Java Spring Boot, MySQL, Docker).
 
 
