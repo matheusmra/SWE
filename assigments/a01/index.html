@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GYM Finder — WebGIS</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        /* ───────── Reset & Base ───────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #f4f4f4;
+        }
+
+        /* ───────── Header ───────── */
+        header {
+            background: #2d3e50;
+            color: #fff;
+            padding: 14px 24px;
+            border-bottom: 3px solid #1abc9c;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        header h1 { font-size: 22px; font-weight: 700; }
+        header p  { font-size: 13px; opacity: .9; }
+
+        /* ───────── Layout: sidebar + map ───────── */
+        .app-container { display: flex; flex: 1; overflow: hidden; }
+
+        #map { flex: 1; z-index: 0; }
+
+        /* ───────── Sidebar ───────── */
+        .sidebar {
+            width: 310px;
+            background: #fff;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            z-index: 1;
+        }
+
+        .sidebar-section {
+            padding: 16px 18px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sidebar-section h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3e50;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .control-group { margin-bottom: 12px; }
+        .control-group:last-child { margin-bottom: 0; }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #444;
+            font-size: 13px;
+        }
+
+        /* ───────── Buttons ───────── */
+        .btn {
+            width: 100%;
+            padding: 10px 0;
+            margin-bottom: 6px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            background: #1abc9c;
+            color: #fff;
+            transition: background .2s;
+        }
+        .btn:hover { background: #159c85; }
+        .btn:disabled { background: #b2dfdb; cursor: not-allowed; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-secondary { background: #7f8c8d; }
+        .btn-secondary:hover { background: #636e72; }
+        .btn-small { padding: 6px 10px; font-size: 12px; width: auto; display: inline-block; }
+
+        /* ───────── Inputs ───────── */
+        select, input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 13px;
+            background: #fff;
+            color: #222;
+        }
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #1abc9c;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 7px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        /* ───────── Layer list ───────── */
+        .layer-list { list-style: none; }
+
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 10px;
+            margin-bottom: 4px;
+            border-radius: 5px;
+            background: #f9f9f9;
+            font-size: 13px;
+            border: 1px solid #eee;
+        }
+        .layer-item .layer-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 6px;
+            font-weight: 500;
+        }
+        .layer-item .layer-actions { display: flex; gap: 4px; }
+        .layer-item .layer-actions button {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 3px 7px;
+            font-size: 12px;
+            transition: .15s;
+        }
+        .layer-item .layer-actions button:hover { background: #eee; }
+        .layer-item .layer-actions .remove-btn:hover { background: #fdecea; color: #c0392b; border-color: #e74c3c; }
+
+        .empty-msg { color: #999; font-size: 12px; font-style: italic; }
+
+        /* ───────── Filter results ───────── */
+        .filter-results {
+            max-height: 180px;
+            overflow-y: auto;
+            margin-top: 8px;
+        }
+        .filter-results .result-item {
+            padding: 6px 10px;
+            margin-bottom: 3px;
+            background: #e8f8f5;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid #b2dfdb;
+            transition: .15s;
+        }
+        .filter-results .result-item:hover { background: #b2dfdb; }
+        .result-item .dist { font-weight: 700; color: #159c85; }
+
+        /* ───────── Status toast ───────── */
+        .status-message {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            padding: 10px 22px;
+            border-radius: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.15);
+            font-size: 13px;
+            font-weight: 600;
+            display: none;
+            pointer-events: none;
+        }
+        .status-message.show { display: block; }
+        .status-message.success { background: #e8f8f5; color: #159c85; border: 1px solid #a3e4d7; }
+        .status-message.error   { background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1; }
+
+        /* ───────── Leaflet tweaks ───────── */
+        .leaflet-control-zoom { border: 1px solid #e0e0e0 !important; border-radius: 6px !important; box-shadow: none !important; }
+        .leaflet-control-zoom a { width: 30px !important; height: 30px !important; line-height: 30px !important; font-size: 18px !important; border: none !important; }
+        .leaflet-control-zoom a:hover { background: #1abc9c !important; color: #fff !important; }
+
+        /* radius circle */
+        .radius-circle { fill-opacity: .10; }
+
+        /* ───────── Mobile ───────── */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column-reverse; }
+            .sidebar { width: 100%; max-height: 50vh; border-right: none; border-top: 1px solid #ddd; }
+            header h1 { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>GYM Finder</h1>
+    </div>
+</header>
+
+<div class="app-container">
+    <!-- ─── Sidebar ─── -->
+    <aside class="sidebar">
+
+        <!-- Mapa base -->
+        <div class="sidebar-section">
+            <h3>Mapa Base</h3>
+            <div class="control-group">
+                <label>Tipo de Mapa</label>
+                <select id="mapType">
+                    <option value="streets">Ruas (OpenStreetMap)</option>
+                    <option value="satellite">Satélite (Esri)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button class="btn" id="geolocateBtn">Minha Localização</button>
+            </div>
+            <p style="font-size:11px;color:#888;margin-top:4px;">Ou clique no mapa para definir sua posição.</p>
+        </div>
+
+        <!-- Camadas -->
+        <div class="sidebar-section">
+            <h3>Camadas</h3>
+            <div class="control-group">
+                <label>Importar camada (GeoJSON, KML, GPX)</label>
+                <input type="file" id="fileInput" accept=".geojson,.json,.kml,.gpx,.zip,.shp">
+            </div>
+            <div class="control-group">
+                <button class="btn" id="importBtn">Adicionar Camada</button>
+            </div>
+            <ul class="layer-list" id="layerList">
+                <li class="empty-msg" id="noLayersMsg">Nenhuma camada adicionada</li>
+            </ul>
+        </div>
+
+        <!-- Filtro de proximidade -->
+        <div class="sidebar-section">
+            <h3>Filtro de Proximidade</h3>
+
+            <div class="control-group">
+                <label>Camada para filtrar</label>
+                <select id="filterLayerSelect">
+                    <option value="">— selecione uma camada —</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Raio (metros)</label>
+                <input type="number" id="filterRadius" value="500" min="50" step="50">
+            </div>
+
+            <div class="control-group">
+                <label>Propriedade para exibir</label>
+                <select id="filterPropSelect">
+                    <option value="">— automático —</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn" id="filterBtn" disabled>Filtrar Próximos</button>
+                <button class="btn btn-secondary" id="clearFilterBtn" style="display:none;">Limpar Filtro</button>
+            </div>
+            <p id="filterHelp" style="font-size:11px;color:#e67e22;margin-top:2px;"></p>
+
+            <div class="filter-results" id="filterResults"></div>
+        </div>
+    </aside>
+
+    <!-- ─── Map ─── -->
+    <div id="map"></div>
+</div>
+
+<div class="status-message" id="statusMessage"></div>
+
+<!-- ═══════════════ Scripts ═══════════════ -->
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Omnivore — KML / GPX -->
+<script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+<!-- Turf.js — spatial analysis -->
+<script src="https://unpkg.com/@turf/turf@7/turf.min.js"></script>
+<!-- shpjs — Shapefile (.zip) -->
+<script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+
+<script>
+// ══════════════════════════════════════════
+//  INICIALIZAÇÃO DO MAPA
+// ══════════════════════════════════════════
+const map = L.map('map', { zoomControl: true }).setView([-19.9227, -43.9942], 14);
+
+// Camadas base
+const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+}).addTo(map);
+
+const satelliteLayer = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri',
+    maxZoom: 19
+});
+
+// ══════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════
+let userMarker = null;
+let userLatLng = null;            // { lat, lng }
+let radiusCircle = null;          // L.circle do filtro
+let highlightLayer = null;        // camada de pontos filtrados
+const importedLayers = [];        // [{ id, name, leafletLayer, geojsonData }]
+let layerIdCounter = 0;
+
+// ══════════════════════════════════════════
+//  CLICAR NO MAPA PARA DEFINIR LOCALIZAÇÃO
+// ══════════════════════════════════════════
+map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    userLatLng = { lat, lng };
+
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.marker([lat, lng], {
+        icon: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+        })
+    }).addTo(map).bindPopup('Posição definida por clique').openPopup();
+
+    updateFilterState();
+    showMessage('Posição definida no mapa!', 'success');
+});
+
+// ══════════════════════════════════════════
+//  TROCAR MAPA BASE
+// ══════════════════════════════════════════
+document.getElementById('mapType').addEventListener('change', e => {
+    if (e.target.value === 'satellite') {
+        map.removeLayer(streetLayer);
+        map.addLayer(satelliteLayer);
+        showMessage('Mapa: Satélite', 'success');
+    } else {
+        map.removeLayer(satelliteLayer);
+        map.addLayer(streetLayer);
+        showMessage('Mapa: Ruas', 'success');
+    }
+});
+
+// ══════════════════════════════════════════
+//  GEOLOCALIZAÇÃO
+// ══════════════════════════════════════════
+document.getElementById('geolocateBtn').addEventListener('click', () => {
+    if (!('geolocation' in navigator)) return showMessage('Geolocalização não suportada', 'error');
+
+    showMessage('Obtendo localização…', 'success');
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            userLatLng = { lat, lng };
+
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.marker([lat, lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                })
+            }).addTo(map).bindPopup('Você está aqui!').openPopup();
+
+            map.setView([lat, lng], 15);
+            updateFilterState();
+            showMessage('Localização encontrada!', 'success');
+        },
+        err => showMessage('Erro: ' + err.message, 'error'),
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+});
+
+// ══════════════════════════════════════════
+//  IMPORTAR CAMADAS
+// ══════════════════════════════════════════
+document.getElementById('importBtn').addEventListener('click', () => {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files.length) return showMessage('Selecione um arquivo primeiro', 'error');
+
+    const file = fileInput.files[0];
+    const name = file.name;
+    const ext = name.split('.').pop().toLowerCase();
+
+    const reader = new FileReader();
+
+    if (ext === 'geojson' || ext === 'json') {
+        reader.onload = e => {
+            try {
+                const geojson = JSON.parse(e.target.result);
+                addGeoJSONLayer(name, geojson);
+            } catch (err) { showMessage('Erro ao ler GeoJSON: ' + err.message, 'error'); }
+        };
+        reader.readAsText(file);
+    } else if (ext === 'kml') {
+        reader.onload = e => {
+            try {
+                const kmlText = e.target.result;
+                const parser = new DOMParser();
+                const kmlDom = parser.parseFromString(kmlText, 'text/xml');
+                const geojson = kmlToGeoJSON(kmlDom);
+                addGeoJSONLayer(name, geojson);
+            } catch (err) { showMessage('Erro ao ler KML: ' + err.message, 'error'); }
+        };
+        reader.readAsText(file);
+    } else if (ext === 'gpx') {
+        reader.onload = e => {
+            try {
+                const gpxText = e.target.result;
+                const parser = new DOMParser();
+                const gpxDom = parser.parseFromString(gpxText, 'text/xml');
+                const geojson = gpxToGeoJSON(gpxDom);
+                addGeoJSONLayer(name, geojson);
+            } catch (err) { showMessage('Erro ao ler GPX: ' + err.message, 'error'); }
+        };
+        reader.readAsText(file);
+    } else if (ext === 'zip' || ext === 'shp') {
+        reader.onload = e => {
+            shp(e.target.result).then(geojson => {
+                addGeoJSONLayer(name, geojson);
+            }).catch(err => showMessage('Erro ao ler Shapefile: ' + err.message, 'error'));
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        showMessage('Formato não suportado. Use GeoJSON, KML, GPX ou Shapefile (.zip)', 'error');
+    }
+
+    fileInput.value = '';
+});
+
+// ── KML → GeoJSON converter (leve, embutido) ──
+function kmlToGeoJSON(kmlDom) {
+    const features = [];
+    const placemarks = kmlDom.getElementsByTagName('Placemark');
+    for (const pm of placemarks) {
+        const nameEl = pm.getElementsByTagName('name')[0];
+        const descEl = pm.getElementsByTagName('description')[0];
+        const props = {
+            name: nameEl ? nameEl.textContent.trim() : '',
+            description: descEl ? descEl.textContent.trim() : ''
+        };
+        // Extended Data
+        const simpleData = pm.getElementsByTagName('SimpleData');
+        for (const sd of simpleData) {
+            const key = sd.getAttribute('name');
+            if (key) props[key] = sd.textContent.trim();
+        }
+        const dataEls = pm.getElementsByTagName('Data');
+        for (const d of dataEls) {
+            const key = d.getAttribute('name');
+            const valEl = d.getElementsByTagName('value')[0];
+            if (key && valEl) props[key] = valEl.textContent.trim();
+        }
+
+        // Point
+        const point = pm.getElementsByTagName('Point')[0];
+        if (point) {
+            const coords = point.getElementsByTagName('coordinates')[0].textContent.trim().split(',');
+            features.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [parseFloat(coords[0]), parseFloat(coords[1])] } });
+            continue;
+        }
+        // LineString
+        const line = pm.getElementsByTagName('LineString')[0];
+        if (line) {
+            const coords = parseCoords(line.getElementsByTagName('coordinates')[0].textContent);
+            features.push({ type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords } });
+            continue;
+        }
+        // Polygon
+        const polygon = pm.getElementsByTagName('Polygon')[0];
+        if (polygon) {
+            const outerCoords = parseCoords(polygon.getElementsByTagName('coordinates')[0].textContent);
+            features.push({ type: 'Feature', properties: props, geometry: { type: 'Polygon', coordinates: [outerCoords] } });
+        }
+    }
+    return { type: 'FeatureCollection', features };
+}
+
+function gpxToGeoJSON(gpxDom) {
+    const features = [];
+    // Waypoints
+    for (const wpt of gpxDom.getElementsByTagName('wpt')) {
+        const lat = parseFloat(wpt.getAttribute('lat'));
+        const lon = parseFloat(wpt.getAttribute('lon'));
+        const nameEl = wpt.getElementsByTagName('name')[0];
+        features.push({ type: 'Feature', properties: { name: nameEl ? nameEl.textContent : '' }, geometry: { type: 'Point', coordinates: [lon, lat] } });
+    }
+    // Tracks
+    for (const trk of gpxDom.getElementsByTagName('trk')) {
+        const nameEl = trk.getElementsByTagName('name')[0];
+        for (const seg of trk.getElementsByTagName('trkseg')) {
+            const coords = [];
+            for (const pt of seg.getElementsByTagName('trkpt')) {
+                coords.push([parseFloat(pt.getAttribute('lon')), parseFloat(pt.getAttribute('lat'))]);
+            }
+            if (coords.length) features.push({ type: 'Feature', properties: { name: nameEl ? nameEl.textContent : '' }, geometry: { type: 'LineString', coordinates: coords } });
+        }
+    }
+    return { type: 'FeatureCollection', features };
+}
+
+function parseCoords(str) {
+    return str.trim().split(/\s+/).map(c => {
+        const p = c.split(',');
+        return [parseFloat(p[0]), parseFloat(p[1])];
+    });
+}
+
+// ── Adicionar GeoJSON ao mapa ──
+function addGeoJSONLayer(name, geojson) {
+    // normalizar FeatureCollection
+    if (geojson.type !== 'FeatureCollection') {
+        if (geojson.type === 'Feature') {
+            geojson = { type: 'FeatureCollection', features: [geojson] };
+        } else {
+            geojson = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: geojson }] };
+        }
+    }
+
+    const color = randomColor();
+    const leafletLayer = L.geoJSON(geojson, {
+        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 7, fillColor: color, color: '#fff', weight: 2, fillOpacity: .85 }),
+        style: () => ({ color, weight: 2, fillColor: color, fillOpacity: .25 }),
+        onEachFeature: (f, layer) => {
+            const html = featurePopupHTML(f);
+            if (html) layer.bindPopup(html, { maxWidth: 280 });
+        }
+    }).addTo(map);
+
+    const id = ++layerIdCounter;
+    importedLayers.push({ id, name, leafletLayer, geojsonData: geojson, color });
+
+    map.fitBounds(leafletLayer.getBounds().pad(0.1));
+    renderLayerList();
+    updateFilterLayerSelect();
+    showMessage(`Camada "${name}" adicionada (${geojson.features.length} feições)`, 'success');
+}
+
+function featurePopupHTML(feature) {
+    const p = feature.properties;
+    if (!p || !Object.keys(p).length) return null;
+    let html = '<div style="font-size:12px;max-height:200px;overflow:auto;">';
+    for (const [k, v] of Object.entries(p)) {
+        if (v === null || v === undefined || v === '') continue;
+        html += `<b>${k}:</b> ${v}<br>`;
+    }
+    html += '</div>';
+    return html;
+}
+
+function randomColor() {
+    const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e84393','#0984e3','#6c5ce7','#fd79a8','#00b894'];
+    return colors[importedLayers.length % colors.length];
+}
+
+// ── Renderizar lista de camadas ──
+function renderLayerList() {
+    const list = document.getElementById('layerList');
+    const noMsg = document.getElementById('noLayersMsg');
+    list.innerHTML = '';
+    if (!importedLayers.length) {
+        list.appendChild(noMsg);
+        noMsg.style.display = '';
+        return;
+    }
+    noMsg.style.display = 'none';
+
+    importedLayers.forEach(lyr => {
+        const li = document.createElement('li');
+        li.className = 'layer-item';
+        li.innerHTML = `
+            <span class="layer-name" title="${lyr.name}">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${lyr.color};margin-right:5px;vertical-align:middle;"></span>
+                ${lyr.name}
+            </span>
+            <span class="layer-actions">
+                <button title="Zoom para camada" onclick="zoomToLayer(${lyr.id})">Zoom</button>
+                <button class="remove-btn" title="Remover camada" onclick="removeLayer(${lyr.id})">✕</button>
+            </span>`;
+        list.appendChild(li);
+    });
+}
+
+window.zoomToLayer = function(id) {
+    const lyr = importedLayers.find(l => l.id === id);
+    if (lyr) map.fitBounds(lyr.leafletLayer.getBounds().pad(0.1));
+};
+
+window.removeLayer = function(id) {
+    const idx = importedLayers.findIndex(l => l.id === id);
+    if (idx === -1) return;
+    map.removeLayer(importedLayers[idx].leafletLayer);
+    importedLayers.splice(idx, 1);
+    renderLayerList();
+    updateFilterLayerSelect();
+    clearFilter();
+    showMessage('Camada removida', 'success');
+};
+
+// ══════════════════════════════════════════
+//  FILTRO DE PROXIMIDADE
+// ══════════════════════════════════════════
+const filterLayerSelect = document.getElementById('filterLayerSelect');
+const filterPropSelect  = document.getElementById('filterPropSelect');
+const filterBtn         = document.getElementById('filterBtn');
+const clearFilterBtn    = document.getElementById('clearFilterBtn');
+const filterResults     = document.getElementById('filterResults');
+
+function updateFilterLayerSelect() {
+    const val = filterLayerSelect.value;
+    filterLayerSelect.innerHTML = '<option value="">— selecione uma camada —</option>';
+    importedLayers.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l.id;
+        opt.textContent = l.name;
+        filterLayerSelect.appendChild(opt);
+    });
+    filterLayerSelect.value = val;
+    updateFilterState();
+}
+
+filterLayerSelect.addEventListener('change', () => {
+    updatePropSelect();
+    updateFilterState();
+});
+
+function updatePropSelect() {
+    filterPropSelect.innerHTML = '<option value="">— automático —</option>';
+    const lyr = importedLayers.find(l => l.id === +filterLayerSelect.value);
+    if (!lyr) return;
+    const propKeys = new Set();
+    lyr.geojsonData.features.forEach(f => {
+        if (f.properties) Object.keys(f.properties).forEach(k => propKeys.add(k));
+    });
+    propKeys.forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = k;
+        filterPropSelect.appendChild(opt);
+    });
+}
+
+function updateFilterState() {
+    const hasLayer = filterLayerSelect.value !== '';
+    const hasLocation = !!userLatLng;
+    filterBtn.disabled = !(hasLayer && hasLocation);
+
+    const helpEl = document.getElementById('filterHelp');
+    if (!hasLocation && !hasLayer) {
+        helpEl.textContent = '⚠ Defina sua posição e importe uma camada primeiro.';
+    } else if (!hasLocation) {
+        helpEl.textContent = '⚠ Defina sua posição (clique no mapa ou use "Minha Localização").';
+    } else if (!hasLayer) {
+        helpEl.textContent = '⚠ Selecione uma camada acima para filtrar.';
+    } else {
+        helpEl.textContent = '';
+    }
+
+    if (!hasLocation) filterBtn.title = 'Defina sua posição primeiro';
+    else if (!hasLayer) filterBtn.title = 'Selecione uma camada';
+    else filterBtn.title = '';
+}
+
+// Atualizar mensagem de ajuda ao carregar
+setTimeout(updateFilterState, 100);
+
+filterBtn.addEventListener('click', () => {
+    const lyr = importedLayers.find(l => l.id === +filterLayerSelect.value);
+    if (!lyr || !userLatLng) return;
+
+    const radiusM = parseFloat(document.getElementById('filterRadius').value) || 500;
+    const propKey = filterPropSelect.value;
+
+    clearFilter(false);
+
+    // Desenhar círculo de raio
+    radiusCircle = L.circle([userLatLng.lat, userLatLng.lng], {
+        radius: radiusM,
+        color: '#3498db',
+        weight: 2,
+        fillColor: '#3498db',
+        fillOpacity: 0.08,
+        dashArray: '6 4',
+        className: 'radius-circle'
+    }).addTo(map);
+
+    // Filtrar feições com Turf.js
+    const userPoint = turf.point([userLatLng.lng, userLatLng.lat]);
+    const results = [];
+
+    lyr.geojsonData.features.forEach(f => {
+        let centroid;
+        try {
+            if (f.geometry.type === 'Point') {
+                centroid = f;
+            } else {
+                centroid = turf.centroid(f);
+            }
+        } catch { return; }
+
+        const dist = turf.distance(userPoint, centroid, { units: 'meters' });
+        if (dist <= radiusM) {
+            results.push({ feature: f, distance: Math.round(dist), centroid: centroid.geometry.coordinates });
+        }
+    });
+
+    results.sort((a, b) => a.distance - b.distance);
+
+    // Destacar no mapa
+    const highlightGeoJSON = { type: 'FeatureCollection', features: results.map(r => r.feature) };
+    highlightLayer = L.geoJSON(highlightGeoJSON, {
+        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 9, fillColor: '#e74c3c', color: '#fff', weight: 3, fillOpacity: 1 }),
+        style: () => ({ color: '#e74c3c', weight: 3, fillColor: '#e74c3c', fillOpacity: .4 }),
+        onEachFeature: (f, layer) => {
+            const html = featurePopupHTML(f);
+            if (html) layer.bindPopup(html, { maxWidth: 280 });
+        }
+    }).addTo(map);
+
+    // Ajustar visualização
+    const group = L.featureGroup([radiusCircle, highlightLayer]);
+    map.fitBounds(group.getBounds().pad(0.15));
+
+    // Mostrar resultados
+    filterResults.innerHTML = '';
+    if (!results.length) {
+        filterResults.innerHTML = '<div class="empty-msg">Nenhuma feição encontrada neste raio.</div>';
+    } else {
+        results.forEach((r, i) => {
+            const label = getFeatureLabel(r.feature, propKey) || `Feição ${i + 1}`;
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `${label} — <span class="dist">${r.distance} m</span>`;
+            div.addEventListener('click', () => {
+                map.setView([r.centroid[1], r.centroid[0]], 17);
+                // abrir popup da feição correspondente
+                highlightLayer.eachLayer(hl => {
+                    const hlCoords = hl.getLatLng ? hl.getLatLng() : null;
+                    if (hlCoords && Math.abs(hlCoords.lat - r.centroid[1]) < 0.0001 && Math.abs(hlCoords.lng - r.centroid[0]) < 0.0001) {
+                        hl.openPopup();
+                    }
+                });
+            });
+            filterResults.appendChild(div);
+        });
+    }
+
+    clearFilterBtn.style.display = '';
+    showMessage(`${results.length} feição(ões) encontrada(s) em ${radiusM} m`, 'success');
+});
+
+function getFeatureLabel(feature, propKey) {
+    const p = feature.properties || {};
+    if (propKey && p[propKey] !== undefined && p[propKey] !== null && p[propKey] !== '') return String(p[propKey]);
+    // fallback: name, Name, nome, Nome, NOME, titulo, label
+    for (const k of ['name','Name','NAME','nome','Nome','NOME','titulo','Titulo','label','Label']) {
+        if (p[k]) return String(p[k]);
+    }
+    return '';
+}
+
+clearFilterBtn.addEventListener('click', () => clearFilter(true));
+
+function clearFilter(notify = true) {
+    if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+    if (highlightLayer) { map.removeLayer(highlightLayer); highlightLayer = null; }
+    filterResults.innerHTML = '';
+    clearFilterBtn.style.display = 'none';
+    if (notify) showMessage('Filtro removido', 'success');
+}
+
+// ══════════════════════════════════════════
+//  UTILITÁRIOS
+// ══════════════════════════════════════════
+function showMessage(text, type) {
+    const el = document.getElementById('statusMessage');
+    el.textContent = text;
+    el.className = 'status-message show ' + type;
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// Boas-vindas
+setTimeout(() => showMessage('Bem-vindo ao GYM Finder! Use o painel lateral para começar.', 'success'), 600);
+</script>
+</body>
+</html>
