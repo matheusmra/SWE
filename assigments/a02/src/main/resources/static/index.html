@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Pedidos 360</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <h1>📦 Gestão360</h1>
+                <p>Módulo de Vendas & Inventário</p>
+            </div>
+            <nav>
+                <button onclick="showSection('products')" class="nav-btn active" id="btn-products">Produtos</button>
+                <button onclick="showSection('orders')" class="nav-btn" id="btn-orders">Pedidos</button>
+                <button onclick="showSection('new-order')" class="nav-btn btn-primary" id="btn-new-order">+ Novo Pedido</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Seção de Produtos -->
+            <section id="section-products" class="content-section">
+                <div class="section-header">
+                    <h2>Controle de Inventário</h2>
+                    <button class="btn-secondary" onclick="openModal('product-modal')">Novo Produto</button>
+                </div>
+                <div class="card">
+                    <div class="table-container">
+                        <table id="products-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Nome</th>
+                                    <th>Preço</th>
+                                    <th>Estoque</th>
+                                    <th>Especificações</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-list">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção de Pedidos -->
+            <section id="section-orders" class="content-section hidden">
+                <div class="section-header">
+                    <h2>Histórico Geral de Vendas</h2>
+                </div>
+                <div class="card">
+                    <div class="table-container">
+                        <table id="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>ID do Pedido</th>
+                                    <th>Data e Hora</th>
+                                    <th>Itens</th>
+                                    <th>Valor Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-list">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção de Novo Pedido -->
+            <section id="section-new-order" class="content-section hidden">
+                <div class="section-header">
+                    <h2>Registrar Nova Operação de Venda</h2>
+                </div>
+                <div class="card order-form-card">
+                    <div id="order-items-container">
+                        <h3>Itens do Carrinho</h3>
+                        <div class="order-item-row header">
+                            <span>Produto</span>
+                            <span>Quantidade</span>
+                            <span>Ação</span>
+                        </div>
+                        <div id="current-order-items">
+                            <!-- Linhas de itens adicionadas aqui -->
+                        </div>
+                        <button class="btn-text" onclick="addOrderItemRow()">+ Adicionar Item ao Carrinho</button>
+                    </div>
+                    <div class="order-summary">
+                        <div class="summary-details">
+                            <p>Resumo Financeiro</p>
+                            <div class="summary-total"><span id="pending-order-total">R$ 0,00</span></div>
+                        </div>
+                        <button class="btn-primary large" onclick="submitOrder()">Finalizar e Sincronizar</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Cadastro de Produto -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content card">
+            <h3 id="modal-title">Cadastrar Novo Produto</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Preencha as informações para o SGBD</p>
+            <form id="product-form">
+                <input type="hidden" id="prod-id">
+                <div class="form-group">
+                    <label>Tipo de Mercadoria</label>
+                    <select id="prod-type" onchange="toggleProductFields()">
+                        <option value="common">Comum / Geral</option>
+                        <option value="eletronico">Equipamento Eletrônico</option>
+                        <option value="perecivel">Produto Perecível</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nome do Produto</label>
+                    <input type="text" id="prod-name" placeholder="Ex: Notebook Pro" required>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Preço Unitário (R$)</label>
+                        <input type="number" step="0.01" id="prod-price" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Estoque Inicial</label>
+                        <input type="number" id="prod-stock" placeholder="0" required>
+                    </div>
+                </div>
+                <div id="extra-fields-eletronico" class="form-group hidden">
+                    <label>Voltagem de Operação</label>
+                    <input type="text" id="prod-voltage" placeholder="Ex: 110V/220V Bivolt">
+                </div>
+                <div id="extra-fields-perecivel" class="form-group hidden">
+                    <label>Data de Validade</label>
+                    <input type="date" id="prod-expiry">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-text" onclick="closeModal('product-modal')">Descartar</button>
+                    <button type="submit" class="btn-primary">Confirmar Cadastro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
