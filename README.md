@@ -12,6 +12,3 @@ This repository contains university assignments and projects for the Software En
 
 Each assignment folder contains its own specific instructions. For the latest project (Order Management System), navigate to `assigments/a02` and follow the instructions in its local README.
 
-## 📝 License
-
-This project is for educational purposes as part of the SWE graduation course.
