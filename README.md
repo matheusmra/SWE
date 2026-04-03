@@ -4,11 +4,9 @@ This repository contains university assignments and projects for the Software En
 
 ## 📁 Repository Structure
 
--   [**Assignment A01**](./assigments/a01): First assignment WEB GIS Prototype (HTML/CSS/JS basics).
+-   [**Assignment A01**](./assigments/a01): GYM Finder — WebGIS Prototype (Interactive map for locating gyms using Leaflet and GeoJSON).
 -   [**Assignment A02**](./assigments/a02): Order Management System (Java Spring Boot, MySQL, Docker).
 
-
-## 🚀 Getting Started
 
 Each assignment folder contains its own specific instructions. For the latest project (Order Management System), navigate to `assigments/a02` and follow the instructions in its local README.
 

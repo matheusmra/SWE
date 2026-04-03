@@ -1,39 +1,38 @@
-# Sistema de Gestão de Pedidos 360 (A02)
+# Order Management System 360 (A02)
 
-Bem-vindo ao Módulo de Gestão de Vendas e Inventário. Este projeto foi desenvolvido como o segundo trabalho (A02) da disciplina de Engenharia de Software II (SWE-II).
+Welcome to the Sales and Inventory Management Module. This project was developed as the second assignment (A02) for the Software Engineering II (SWE-II) discipline.
 
-## 🎯 Objetivo do Projeto
-Demonstrar a implementação de um sistema Full-Stack utilizando **Spring Boot**, **Hibernate** com estratégia de herança (**Single Table**) e orquestração via **Docker**.
+## 🎯 Project Objective
+Demonstrate the implementation of a full-stack system using **Spring Boot**, **Hibernate** with inheritance strategy (**Single Table**), and orchestration via **Docker**.
 
-## 🛠️ Funcionalidades Principais
-- **Herança em Banco de Dados**: Uso de tabela única para Produtos, Eletrônicos e Perecíveis.
-- **REST API Completa**: Endpoints para CRUD de produtos e criação de pedidos.
-- **Regras de Negócio**: Redução automática de estoque e validação de disponibilidade.
-- **Dashboard Premium**: Interface baseada em Windows Glassmorphism com tradução para Português.
+## 🛠️ Core Features
+- **Database Inheritance**: Use of a single table for Products, Electronics, and Perishables.
+- **Full REST API**: Endpoints for product CRUD and order creation.
+- **Business Rules**: Automatic stock reduction and availability validation.
+- **Premium Dashboard**: Interface based on Windows Glassmorphism with multilingual support.
 
-## 🚀 Como Rodar o Projeto
+## 🚀 How to Run the Project
 
-A forma mais simples de subir o sistema é utilizando o **Docker Desktop**.
+The simplest way to start the system is using **Docker Desktop**.
 
-1.  Certifique-se de que o **Docker Desktop** esteja aberto e rodando no seu computador.
-2.  Abra o seu terminal (Powershell ou CMD) nesta pasta (`assigments/a02`).
-3.  Execute o comando de build e orquestração:
+1.  Ensure that **Docker Desktop** is open and running on your computer.
+2.  Open your terminal (Powershell or CMD) in this folder (`assigments/a02`).
+3.  Run the build and orchestration command:
     ```bash
     docker compose up --build
     ```
-4.  Aguarde o download das imagens e a compilação do Maven.
-5.  Quando o terminal mostrar que a aplicação Java subiu com sucesso, acesse:
+4.  Wait for the images to download and the Maven compilation to complete.
+5.  When the terminal shows that the Java application has started successfully, access:
     **[http://localhost:8080/](http://localhost:8080/)**
 
-## 📂 Estrutura de Pastas
-- `/src/main/java`: Código fonte Backend (Spring Boot).
+## 📂 Folder Structure
+- `/src/main/java`: Backend source code (Spring Boot).
 - `/src/main/resources/static`: Frontend (HTML, CSS, JS).
-- `/sql`: Script de inicialização do banco de dados (MySQL).
-- `Dockerfile` & `docker-compose.yml`: Arquivos de orquestração.
+- `/sql`: Database initialization script (MySQL).
+- `Dockerfile` & `docker-compose.yml`: Orchestration files.
 
-## 📋 Requisitos Mínimos
-- Docker Desktop instalado.
-- Conexão com a internet para baixar as dependências (Maven e Imagens Docker).
+## 📋 Minimum Requirements
+- Docker Desktop installed.
+- Internet connection to download dependencies (Maven and Docker images).
 
 ---
-
