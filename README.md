@@ -1,5 +1,5 @@
 # Software Engineering Assignments (SWE)
-
+ 
 This repository contains university assignments and projects for the Software Engineering course.
 
 ## 📁 Repository Structure
